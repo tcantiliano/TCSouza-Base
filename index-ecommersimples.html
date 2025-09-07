@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adegas Online</title>
+    <!-- Adiciona Tailwind CSS para um estilo rápido e moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+            color: #1f2937; /* Texto escuro */
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop {
+            animation: pop 0.3s ease-in-out;
+        }
+        .rating svg {
+            color: #d1d5db; /* Estrela cinza */
+        }
+        .rating .filled {
+            color: #facc15; /* Estrela amarela preenchida */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center text-gray-800">
+    <div class="w-full max-w-7xl mx-auto p-6 lg:p-12">
+        <header class="bg-white rounded-3xl shadow-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Adegas Online</h1>
+            <!-- Botão do Carrinho que rola com o conteúdo -->
+            <button id="cart-button" class="relative bg-blue-600 text-white font-semibold py-3 px-6 rounded-3xl hover:bg-blue-500 transition duration-300 shadow-lg">
+                <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.182 1.767.707 1.767H18a2 2 0 002-2v-3.5a.5.5 0 00-.5-.5h-15.5" />
+                    </svg>
+                    Carrinho
+                    <span id="cart-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">0</span>
+                </span>
+            </button>
+        </header>
+
+        <!-- Barra de pesquisa e filtros -->
+        <div class="bg-white rounded-3xl shadow-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <input type="text" id="search-input" placeholder="Pesquisar produtos..." class="w-full md:w-2/3 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 transition duration-300">
+            <select id="category-filter" class="w-full md:w-1/3 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 transition duration-300">
+                <option value="all">Todos os Produtos</option>
+                <option value="vinho">Vinhos</option>
+                <option value="acessorio">Acessórios</option>
+            </select>
+        </div>
+
+        <main id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <!-- Os produtos serão injetados aqui via JavaScript -->
+        </main>
+    </div>
+
+    <!-- Modal do Carrinho -->
+    <div id="cart-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-2xl p-6 relative">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Seu Carrinho</h2>
+            <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                <!-- Itens do carrinho serão injetados aqui -->
+                <p id="empty-cart-message" class="text-gray-500 text-center">Seu carrinho está vazio.</p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <div class="flex justify-between items-center text-lg font-semibold text-gray-800">
+                    <span>Subtotal:</span>
+                    <span id="cart-subtotal">R$ 0,00</span>
+                </div>
+                <div class="flex justify-between items-center text-lg font-semibold text-gray-800 mt-2">
+                    <span>Frete:</span>
+                    <span id="shipping-cost">R$ 0,00</span>
+                </div>
+                <div class="flex justify-between items-center text-xl font-bold text-gray-900 mt-2">
+                    <span>Total:</span>
+                    <span id="cart-total">R$ 0,00</span>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="cep-input" class="block text-sm font-medium text-gray-700">Calcular Frete (CEP):</label>
+                    <input type="text" id="cep-input" placeholder="Ex: 12345-678" class="mt-1 w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 transition duration-300">
+                </div>
+
+                <button id="checkout-button" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-3xl mt-4 hover:bg-blue-500 transition duration-300 shadow-lg">
+                    Finalizar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use uma IIFE (Immediately Invoked Function Expression) para encapsular o código
+        (function() {
+            // Definição dos produtos em um array de objetos
+            const products = [
+                { id: 1, name: "Vinho Tinto Suave", price: 25.00, image: "https://placehold.co/600x400/800020/ffffff?text=Vinho+Tinto+Suave", category: "vinho", stock: 10, rating: 4.5 },
+                { id: 2, name: "Vinho Branco Seco", price: 30.00, image: "https://placehold.co/600x400/fff8dc/000000?text=Vinho+Branco+Seco", category: "vinho", stock: 5, rating: 4.8 },
+                { id: 3, name: "Vinho Rosé de Mesa", price: 28.00, image: "https://placehold.co/600x400/fdc4d9/000000?text=Vinho+Rosé+Mesa", category: "vinho", stock: 8, rating: 4.2 },
+                { id: 4, name: "Taça de Vidro Simples", price: 15.00, image: "https://placehold.co/600x400/4c3756/ffffff?text=Taça+Vidro", category: "acessorio", stock: 20, rating: 4.0 },
+                { id: 5, name: "Saca-Rolhas Manual", price: 10.00, image: "https://placehold.co/600x400/3e2723/ffffff?text=Saca-Rolhas", category: "acessorio", stock: 15, rating: 3.9 },
+                { id: 6, name: "Abridor de Vinho", price: 12.00, image: "https://placehold.co/600x400/94a3b8/ffffff?text=Abridor", category: "acessorio", stock: 0, rating: 4.1 },
+                { id: 7, name: "Kit de Aerador de Vinho", price: 40.00, image: "https://placehold.co/600x400/dc2626/ffffff?text=Aerador", category: "acessorio", stock: 7, rating: 4.7 },
+                { id: 8, name: "Kit de Vinhos para Iniciantes", price: 150.00, image: "https://placehold.co/600x400/0891b2/ffffff?text=Kit+Vinhos", category: "vinho", stock: 3, rating: 5.0 },
+            ];
+
+            // Seleciona os elementos do DOM
+            const productList = document.getElementById('product-list');
+            const cartButton = document.getElementById('cart-button');
+            const cartModal = document.getElementById('cart-modal');
+            const closeModalButton = document.getElementById('close-modal');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartTotalElement = document.getElementById('cart-total');
+            const cartSubtotalElement = document.getElementById('cart-subtotal');
+            const shippingCostElement = document.getElementById('shipping-cost');
+            const cartCountElement = document.getElementById('cart-count');
+            const emptyCartMessage = document.getElementById('empty-cart-message');
+            const searchInput = document.getElementById('search-input');
+            const categoryFilter = document.getElementById('category-filter');
+            const cepInput = document.getElementById('cep-input');
+
+            // Carrega o carrinho do localStorage ou inicia com um array vazio
+            let cart = JSON.parse(localStorage.getItem('simpleEcomCart')) || [];
+
+            // Função para formatar o preço para BRL
+            const formatPrice = (price) => {
+                return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            };
+
+            // Função para renderizar as estrelas de avaliação
+            const renderRatingStars = (rating) => {
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 !== 0;
+                let starsHtml = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < fullStars) {
+                        starsHtml += `<svg class="w-4 h-4 text-yellow-400 filled" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`;
+                    } else if (hasHalfStar && i === fullStars) {
+                        starsHtml += `<svg class="w-4 h-4 text-yellow-400 filled" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0L4.256 16.3c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" mask="url(#halfStarMask)"></path></svg>`;
+                    } else {
+                        starsHtml += `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`;
+                    }
+                }
+                return starsHtml;
+            };
+
+            // Função para filtrar e renderizar os produtos
+            const renderProducts = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCategory = categoryFilter.value;
+
+                const filteredProducts = products.filter(product => {
+                    const matchesSearch = product.name.toLowerCase().includes(searchTerm);
+                    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+                    return matchesSearch && matchesCategory;
+                });
+
+                productList.innerHTML = filteredProducts.map(product => `
+                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden transform transition-transform duration-300 hover:scale-105">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">${product.name}</h3>
+                            <div class="rating flex items-center mb-2">
+                                ${renderRatingStars(product.rating)}
+                                <span class="text-sm text-gray-500 ml-2">${product.rating}</span>
+                            </div>
+                            <p class="text-gray-600 font-bold text-lg mb-4">${formatPrice(product.price)}</p>
+                            <div class="text-sm text-gray-500 mb-4">
+                                Estoque: <span class="font-semibold text-gray-700">${product.stock > 0 ? product.stock : 'Esgotado'}</span>
+                            </div>
+                            <button data-product-id="${product.id}" class="add-to-cart-btn w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-3xl hover:bg-blue-500 transition duration-300 ${product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${product.stock === 0 ? 'disabled' : ''}>
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Adiciona os event listeners aos botões após a renderização
+                attachAddToCartListeners();
+            };
+
+            // Função para adicionar um produto ao carrinho com efeito visual e controle de estoque
+            const addToCart = (productId, button) => {
+                const productToAdd = products.find(p => p.id === productId);
+                if (!productToAdd || productToAdd.stock <= 0) {
+                    console.log('Produto fora de estoque.');
+                    return;
+                }
+
+                const existingItem = cart.find(item => item.id === productId);
+                
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ ...productToAdd, quantity: 1 });
+                }
+
+                productToAdd.stock--;
+                
+                saveCart();
+                updateCartUI();
+                
+                // Atualiza o estado do botão na lista de produtos
+                renderProducts();
+
+                // Efeito visual no botão
+                const originalText = "Adicionar ao Carrinho";
+                const originalBgColor = 'bg-blue-600';
+                const successBgColor = 'bg-green-500';
+
+                button.textContent = "Adicionado!";
+                button.classList.remove(originalBgColor, 'hover:bg-blue-500');
+                button.classList.add(successBgColor, 'animate-pop');
+                button.disabled = true;
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove(successBgColor, 'animate-pop');
+                    button.classList.add(originalBgColor, 'hover:bg-blue-500');
+                    button.disabled = false;
+                    renderProducts(); // Renderiza novamente para refletir o estoque
+                }, 1000);
+            };
+
+            // Função para remover um item do carrinho
+            window.removeItem = (productId) => {
+                const itemToRemove = cart.find(item => item.id === productId);
+                if (itemToRemove) {
+                    const productInStock = products.find(p => p.id === productId);
+                    productInStock.stock += itemToRemove.quantity;
+                    cart = cart.filter(item => item.id !== productId);
+                    saveCart();
+                    updateCartUI();
+                    renderProducts();
+                }
+            };
+            
+            // Funções de ajuste de quantidade no carrinho
+            window.adjustQuantity = (productId, change) => {
+                const item = cart.find(item => item.id === productId);
+                const productInStock = products.find(p => p.id === productId);
+
+                if (item) {
+                    const newQuantity = item.quantity + change;
+                    if (newQuantity > 0 && newQuantity <= productInStock.stock + item.quantity) {
+                        item.quantity = newQuantity;
+                        productInStock.stock -= change;
+                        saveCart();
+                        updateCartUI();
+                        renderProducts();
+                    } else if (newQuantity <= 0) {
+                        removeItem(productId);
+                    }
+                }
+            };
+
+            // Função para salvar o carrinho no localStorage
+            const saveCart = () => {
+                localStorage.setItem('simpleEcomCart', JSON.stringify(cart));
+            };
+
+            // Função para calcular o frete (simulado)
+            const calculateShipping = (cep) => {
+                if (cep.length === 9) { // Ex: 12345-678
+                    return 15.00; // Frete fixo simulado
+                }
+                return 0.00;
+            };
+
+            // Função para renderizar os itens do carrinho no modal
+            const renderCartItems = () => {
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = `<p id="empty-cart-message" class="text-gray-500 text-center">Seu carrinho está vazio.</p>`;
+                } else {
+                    cartItemsContainer.innerHTML = cart.map(item => `
+                        <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
+                            <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg">
+                            <div class="flex-grow">
+                                <h4 class="font-semibold text-gray-800">${item.name}</h4>
+                                <p class="text-sm text-gray-600">${formatPrice(item.price)}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="adjustQuantity(${item.id}, -1)" class="bg-gray-300 text-gray-800 px-2 py-1 rounded-full text-sm">-</button>
+                                <span class="font-semibold">${item.quantity}</span>
+                                <button onclick="adjustQuantity(${item.id}, 1)" class="bg-gray-300 text-gray-800 px-2 py-1 rounded-full text-sm">+</button>
+                            </div>
+                            <button onclick="removeItem(${item.id})" class="text-red-500 hover:text-red-700 transition duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    `).join('');
+                }
+            };
+
+            // Função para atualizar o total e a contagem do carrinho
+            const updateCartUI = () => {
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const shipping = calculateShipping(cepInput.value);
+                const total = subtotal + shipping;
+
+                cartSubtotalElement.textContent = formatPrice(subtotal);
+                shippingCostElement.textContent = formatPrice(shipping);
+                cartTotalElement.textContent = formatPrice(total);
+                cartCountElement.textContent = count;
+                
+                renderCartItems();
+            };
+
+            // Função para adicionar event listeners aos botões
+            const attachAddToCartListeners = () => {
+                const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+                addToCartButtons.forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const productId = parseInt(event.currentTarget.dataset.productId, 10);
+                        addToCart(productId, event.currentTarget);
+                    });
+                });
+            };
+
+            // Eventos do Modal
+            cartButton.addEventListener('click', () => {
+                cartModal.classList.remove('hidden');
+                updateCartUI();
+            });
+
+            closeModalButton.addEventListener('click', () => {
+                cartModal.classList.add('hidden');
+            });
+
+            cartModal.addEventListener('click', (e) => {
+                if (e.target === cartModal) {
+                    cartModal.classList.add('hidden');
+                }
+            });
+
+            // Evento para finalizar a compra (simulado)
+            document.getElementById('checkout-button').addEventListener('click', () => {
+                console.log('Finalizar Compra Clicado');
+                
+                if (cart.length > 0) {
+                    console.log('Compra finalizada com sucesso!');
+                    cart = [];
+                    saveCart();
+                    updateCartUI();
+                    cartModal.classList.add('hidden');
+                } else {
+                    console.log('Seu carrinho está vazio.');
+                }
+            });
+
+            // Event listeners para pesquisa e filtro
+            searchInput.addEventListener('input', renderProducts);
+            categoryFilter.addEventListener('change', renderProducts);
+
+            // Event listener para cálculo de frete
+            cepInput.addEventListener('input', () => {
+                updateCartUI();
+            });
+
+            // Inicializa a página
+            renderProducts();
+            updateCartUI(); // Atualiza a contagem inicial ao carregar a página
+        })();
+    </script>
+</body>
+</html>
